@@ -138,7 +138,7 @@ const MG = {
     const checkins = this.getCheckins();
     if (checkins.length === 0) return null;
 
-    const headers = ['timestamp', 'window', 'mood', 'anhedonia', 'energy', 'hopelessness', 'rumination', 'sleepPoor', 'socialActivity', 'exercise', 'stressEvent'];
+    const headers = ['timestamp', 'window', 'mood', 'anhedonia', 'energy', 'hopelessness', 'rumination', 'sleepPoor', 'socialActivity', 'exercise', 'stressEvent', 'medicationTaken', 'ateMeal', 'alcohol', 'therapy', 'note'];
     const rows = checkins.map(c => [
       c.timestamp,
       c.window,
@@ -147,10 +147,15 @@ const MG = {
       c.responses.energy,
       c.responses.hopelessness,
       c.responses.rumination,
-      c.context.sleepPoor,
-      c.context.socialActivity,
-      c.context.exercise,
-      c.context.stressEvent
+      c.context.sleepPoor || false,
+      c.context.socialActivity || false,
+      c.context.exercise || false,
+      c.context.stressEvent || false,
+      c.context.medicationTaken || false,
+      c.context.ateMeal || false,
+      c.context.alcohol || false,
+      c.context.therapy || false,
+      '"' + (c.note || '').replace(/"/g, '""') + '"'
     ].join(','));
 
     return [headers.join(','), ...rows].join('\n');

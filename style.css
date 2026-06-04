@@ -511,6 +511,29 @@ html, body {
   accent-color: var(--primary);
 }
 
+.free-text-section {
+  padding-bottom: 0;
+}
+
+.free-text-section textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: var(--font);
+  resize: vertical;
+  min-height: 70px;
+  background: var(--card);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.free-text-section textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 .btn-submit-checkin {
   margin: 20px;
 }

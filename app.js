@@ -114,6 +114,9 @@
 
     $$('.context-item input[type="checkbox"]').forEach(c => c.checked = false);
 
+    const freeText = $('#free-text');
+    if (freeText) freeText.value = '';
+
     showScreen('checkin');
   }
 
@@ -128,12 +131,16 @@
       context[c.dataset.key] = c.checked;
     });
 
+    const freeText = $('#free-text');
+    const note = freeText ? freeText.value.trim() : '';
+
     const checkin = {
       id: new Date().toISOString().slice(0, 10) + '_' + determineWindow(),
       timestamp: new Date().toISOString(),
       window: determineWindow(),
       responses,
-      context
+      context,
+      note
     };
 
     MG.addCheckin(checkin);
