@@ -182,7 +182,8 @@
     initChipGroup('chip-medication', true);
     initChipGroup('chip-sleep', false);
 
-    $('#onboarding-form').addEventListener('submit', handleOnboarding);
+    $('#onboarding-form').addEventListener('submit', function(e) { e.preventDefault(); handleOnboarding(e); });
+    $('#btn-start').addEventListener('click', function(e) { e.preventDefault(); handleOnboarding(e); });
 
     $$('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -220,6 +221,10 @@
       });
     });
   }
+
+  window.onerror = function(msg, url, line) {
+    alert('Error: ' + msg + ' at line ' + line);
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
