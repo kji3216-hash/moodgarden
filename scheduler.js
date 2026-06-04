@@ -86,7 +86,7 @@ const Scheduler = {
   scheduleNotifications() {
     const schedule = this.ensureSchedule();
 
-    if (Notification.permission !== 'granted') return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
     const now = Date.now();
 
