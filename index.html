@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#f0f7ee">
+  <title>MoodGarden 🌱</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Screen: Onboarding -->
+  <div id="screen-onboarding" class="screen active">
+    <div class="screen-scroll">
+      <div class="onboarding-header">
+        <span class="logo">🌱</span>
+        <h1>MoodGarden</h1>
+        <p class="subtitle">당신의 마음 정원을 시작하세요</p>
+      </div>
+
+      <form id="onboarding-form">
+        <div class="form-group">
+          <label>이름 (또는 닉네임)</label>
+          <input type="text" id="inp-nickname" placeholder="사용" required>
+        </div>
+
+        <div class="form-group">
+          <label>출생년도</label>
+          <input type="number" id="inp-birthyear" min="1940" max="2015" placeholder="2003" required>
+        </div>
+
+        <div class="form-group">
+          <label>성별</label>
+          <div class="chip-group" id="chip-gender">
+            <button type="button" class="chip" data-value="female">여성</button>
+            <button type="button" class="chip" data-value="male">남성</button>
+            <button type="button" class="chip" data-value="other">기타</button>
+            <button type="button" class="chip" data-value="decline">응답 거부</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>현재 받고 있는 진단 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chip-group" id="chip-diagnosis">
+            <button type="button" class="chip" data-value="MDD">우울장애</button>
+            <button type="button" class="chip" data-value="GAD">불안장애</button>
+            <button type="button" class="chip" data-value="PD">공황장애</button>
+            <button type="button" class="chip" data-value="PTSD">PTSD</button>
+            <button type="button" class="chip" data-value="OCD">강박장애</button>
+            <button type="button" class="chip" data-value="other">기타</button>
+            <button type="button" class="chip" data-value="none">없음</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>현재 복용 약물 <span class="hint">(복수 선택 가능)</span></label>
+          <div class="chip-group" id="chip-medication">
+            <button type="button" class="chip" data-value="antidepressant">항우울제</button>
+            <button type="button" class="chip" data-value="anxiolytic">항불안제</button>
+            <button type="button" class="chip" data-value="sleep">수면제</button>
+            <button type="button" class="chip" data-value="mood">기분조절제</button>
+            <button type="button" class="chip" data-value="none">없음</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>평소 수면 패턴</label>
+          <div class="chip-group" id="chip-sleep">
+            <button type="button" class="chip" data-value="insomnia">불면</button>
+            <button type="button" class="chip" data-value="short">짧은 수면</button>
+            <button type="button" class="chip" data-value="hypersomnia">과수면</button>
+            <button type="button" class="chip" data-value="normal">보통</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>주요 스트레스 요인 <span class="hint">(선택)</span></label>
+          <input type="text" id="inp-stressors" placeholder="학업, 대인관계 등">
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-start">
+          정원 시작하기 🌿
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Screen: Garden (Main) -->
+  <div id="screen-garden" class="screen">
+    <div class="top-bar">
+      <span class="greeting" id="greeting-text">안녕하세요 🌱</span>
+      <div class="top-bar-actions">
+        <button class="icon-btn" id="btn-settings" title="설정">⚙️</button>
+        <button class="icon-btn" id="btn-export" title="CSV 내보내기">📤</button>
+      </div>
+    </div>
+
+    <!-- Garden Visualization -->
+    <div class="garden-container" id="garden">
+      <div class="garden-ground"></div>
+      <!-- Plants rendered by garden.js -->
+    </div>
+
+    <!-- Stamp Card -->
+    <div class="card stamp-card" id="stamp-card">
+      <div class="stamp-card-title">이번 주 스탬프</div>
+      <div class="stamp-slots" id="stamp-slots"></div>
+      <div class="stamp-progress" id="stamp-progress">0 / 7</div>
+    </div>
+
+    <!-- Streak -->
+    <div class="card streak-card" id="streak-card">
+      <span class="streak-flame" id="streak-flame">🌱</span>
+      <span class="streak-count" id="streak-count">0</span>
+      <span class="streak-label">일 연속</span>
+      <span class="streak-freeze" id="streak-freeze">❄️ x2</span>
+    </div>
+
+    <!-- Next Check-in -->
+    <div class="card next-checkin" id="next-checkin">
+      <div class="checkin-window" id="checkin-window">오전 체크인</div>
+      <div class="checkin-time" id="checkin-time">08:00 - 10:00</div>
+      <button class="btn-primary" id="btn-checkin">지금 체크인하기 ✍️</button>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="garden">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">정원</span>
+      </button>
+      <button class="nav-btn" data-screen="checkin">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">체크인</span>
+      </button>
+      <button class="nav-btn" data-screen="insights">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">인사이트</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Screen: Check-in -->
+  <div id="screen-checkin" class="screen">
+    <div class="screen-scroll">
+      <div class="checkin-header">
+        <button class="back-btn" id="btn-back-garden">←</button>
+        <span class="checkin-window-label" id="checkin-window-label">오후 체크인</span>
+        <span class="checkin-step" id="checkin-step">1 / 5</span>
+      </div>
+
+      <!-- VAS Sliders -->
+      <div id="vas-container">
+        <div class="vas-item" data-key="mood">
+          <div class="vas-question">지금 내 기분은?</div>
+          <div class="vas-labels">
+            <span>최악</span><span>최상</span>
+          </div>
+          <input type="range" class="vas-slider" min="0" max="100" value="35" data-key="mood">
+          <div class="vas-value">35</div>
+        </div>
+
+        <div class="vas-item" data-key="anhedonia">
+          <div class="vas-question">지금 뭔가 하고 싶거나 즐거움을 느끼는 정도는?</div>
+          <div class="vas-labels">
+            <span>전혀</span><span>매우</span>
+          </div>
+          <input type="range" class="vas-slider" min="0" max="100" value="35" data-key="anhedonia">
+          <div class="vas-value">35</div>
+        </div>
+
+        <div class="vas-item" data-key="energy">
+          <div class="vas-question">지금 내 에너지는?</div>
+          <div class="vas-labels">
+            <span>바닥</span><span>가득</span>
+          </div>
+          <input type="range" class="vas-slider" min="0" max="100" value="35" data-key="energy">
+          <div class="vas-value">35</div>
+        </div>
+
+        <div class="vas-item" data-key="hopelessness">
+          <div class="vas-question">지금 앞날에 희망이 느껴지는 정도는?</div>
+          <div class="vas-labels">
+            <span>전혀</span><span>매우</span>
+          </div>
+          <input type="range" class="vas-slider" min="0" max="100" value="35" data-key="hopelessness">
+          <div class="vas-value">35</div>
+        </div>
+
+        <div class="vas-item" data-key="rumination">
+          <div class="vas-question">마지막 체크인 이후 부정적인 생각에 사로잡혀 있었나?</div>
+          <div class="vas-labels">
+            <span>전혀</span><span>계속</span>
+          </div>
+          <input type="range" class="vas-slider" min="0" max="100" value="35" data-key="rumination">
+          <div class="vas-value">35</div>
+        </div>
+      </div>
+
+      <!-- Context Checkboxes -->
+      <div class="context-section">
+        <div class="context-title">오늘 해당하는 것 <span class="hint">(선택)</span></div>
+        <label class="context-item">
+          <input type="checkbox" data-key="sleepPoor"> 수면 질 저하
+        </label>
+        <label class="context-item">
+          <input type="checkbox" data-key="socialActivity"> 사회적 활동 있었음
+        </label>
+        <label class="context-item">
+          <input type="checkbox" data-key="exercise"> 운동
+        </label>
+        <label class="context-item">
+          <input type="checkbox" data-key="stressEvent"> 특별한 스트레스 사건
+        </label>
+      </div>
+
+      <button class="btn-primary btn-submit-checkin" id="btn-submit-checkin">
+        제출하기 🌱
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen: Insights -->
+  <div id="screen-insights" class="screen">
+    <div class="screen-scroll">
+      <div class="insights-header">
+        <h2>📈 인사이트</h2>
+      </div>
+
+      <!-- Locked State -->
+      <div id="insights-locked" class="card">
+        <div class="locked-icon">🔒</div>
+        <div class="locked-msg" id="locked-msg">
+          데이터를 모으는 중...
+        </div>
+        <div class="locked-progress" id="locked-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <span id="progress-text">0 / 4 일</span>
+        </div>
+      </div>
+
+      <!-- Day 4-7: Daily Trajectory -->
+      <div id="insight-trajectory" class="insight-section hidden">
+        <div class="card">
+          <h3>일별 기분 흐름</h3>
+          <div class="chart-container" id="chart-trajectory"></div>
+          <div class="insight-summary" id="trajectory-summary"></div>
+        </div>
+      </div>
+
+      <!-- Day 8-14: Intraday Variability -->
+      <div id="insight-variability" class="insight-section hidden">
+        <div class="card">
+          <h3>하루 안의 기분 출렁임</h3>
+          <div class="chart-container" id="chart-variability"></div>
+          <div class="insight-summary" id="variability-summary"></div>
+        </div>
+      </div>
+
+      <!-- Day 15+: Lag Analysis -->
+      <div id="insight-lag" class="insight-section hidden">
+        <div class="card">
+          <h3>나만의 패턴</h3>
+          <div id="lag-results"></div>
+          <div class="lag-disclaimer">
+            ⚠️ 이는 상관관계이며 인과관계가 아닙니다. 참고용으로만 활용하세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer-card card">
+        <p>이 도구는 진단이나 치료를 대체하지 않습니다.<br>
+        N=1 자기 추적이므로 일반화할 수 없습니다.</p>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="garden">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">정원</span>
+      </button>
+      <button class="nav-btn" data-screen="checkin">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">체크인</span>
+      </button>
+      <button class="nav-btn active" data-screen="insights">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">인사이트</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="storage.js"></script>
+  <script src="scheduler.js"></script>
+  <script src="garden.js"></script>
+  <script src="insights.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
