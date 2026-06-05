@@ -653,3 +653,44 @@ html, body {
   transform: translateX(-50%) translateY(20px);
   pointer-events: none;
 }
+
+
+.data-quality-card h3 {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quality-stat {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(108, 92, 231, 0.08);
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.quality-stat strong {
+  color: var(--primary);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.quality-stat span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.quality-missing {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 10px;
+}

@@ -85,13 +85,13 @@
   }
 
   function updateNextCheckin() {
-    const window = Scheduler.getCurrentWindow();
-    if (!window) return;
+    const windowInfo = Scheduler.getCurrentWindow();
+    if (!windowInfo) return;
 
     const windowEl = $('#checkin-window');
     const timeEl = $('#checkin-time');
-    if (windowEl) windowEl.textContent = window.label;
-    if (timeEl) timeEl.textContent = `${String(window.start).padStart(2, '0')}:00 - ${String(window.end).padStart(2, '0')}:00`;
+    if (windowEl) windowEl.textContent = windowInfo.label;
+    if (timeEl) timeEl.textContent = `${String(windowInfo.start).padStart(2, '0')}:00 - ${String(windowInfo.end).padStart(2, '0')}:00`;
   }
 
   function determineWindow() {
@@ -102,10 +102,10 @@
   }
 
   function openCheckin() {
-    const window = determineWindow();
+    const windowKey = determineWindow();
     const windowLabels = { morning: '오전 체크인', afternoon: '오후 체크인', evening: '저녁 체크인' };
 
-    $('#checkin-window-label').textContent = windowLabels[window];
+    $('#checkin-window-label').textContent = windowLabels[windowKey];
 
     $$('.vas-slider').forEach(s => {
       s.value = 35;
@@ -133,31 +133,45 @@
 
     const freeText = $('#free-text');
     const note = freeText ? freeText.value.trim() : '';
+    const submittedAt = new Date();
+    const localDate = MG.toLocalDate(submittedAt);
+    const windowKey = determineWindow();
+    const scheduledWindow = Scheduler.getWindowByKey(windowKey);
 
     const checkin = {
-      id: new Date().toISOString().slice(0, 10) + '_' + determineWindow(),
-      timestamp: new Date().toISOString(),
-      window: determineWindow(),
+      id: MG.buildCheckinId(localDate, windowKey),
+      schemaVersion: MG.SCHEMA_VERSION,
+      localDate,
+      window: windowKey,
+      scheduledAt: scheduledWindow && scheduledWindow.scheduledAt ? scheduledWindow.scheduledAt : '',
+      submittedAt: submittedAt.toISOString(),
+      timestamp: submittedAt.toISOString(),
+      timezoneOffset: MG.getTimezoneOffset(submittedAt),
       responses,
       context,
       note
     };
 
-    MG.addCheckin(checkin);
-    MG.addStamp();
-    MG.updateStreak();
+    const result = MG.upsertCheckin(checkin);
+    if (!result.replaced) {
+      MG.addStamp();
+      MG.updateStreak();
+    }
     MG.checkUnlocks();
 
     Garden.addNewPlant(responses);
 
     showScreen('garden');
 
+    if (result.replaced) {
+      showToast('이 시간대 체크인을 업데이트했어요');
+      return;
+    }
+
     const streak = MG.getStreak();
-    if (streak.milestones && !streak.milestones.includes(streak.count) === false) {
-      if (streak.count === 7 || streak.count === 14 || streak.count === 30) {
-        showToast(`🎉 ${streak.count}일 연속 달성! 대단해요!`, 4000);
-        return;
-      }
+    if (streak.milestones && streak.milestones.includes(streak.count) && (streak.count === 7 || streak.count === 14 || streak.count === 30)) {
+      showToast(`🎉 ${streak.count}일 연속 달성! 대단해요!`, 4000);
+      return;
     }
 
     const moodMsg = responses.mood >= 70 ? '기분이 좋아 보이네요 🌻' :

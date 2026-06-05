@@ -1,9 +1,25 @@
 const Insights = {
+  WINDOW_LABELS: {
+    morning: '오전',
+    afternoon: '오후',
+    evening: '저녁'
+  },
+
+  KEY_NAMES: {
+    mood: '기분',
+    anhedonia: '즐거움/흥미',
+    energy: '에너지',
+    hopelessness: '희망감',
+    rumination: '반추'
+  },
+
   mean(arr) {
+    if (!arr.length) return 0;
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   },
 
   sd(arr) {
+    if (!arr.length) return 0;
     const m = this.mean(arr);
     return Math.sqrt(arr.reduce((sum, v) => sum + (v - m) ** 2, 0) / arr.length);
   },
@@ -28,9 +44,9 @@ const Insights = {
     const byDay = {};
 
     checkins.forEach(c => {
-      const day = c.timestamp.slice(0, 10);
+      const day = MG.getCheckinLocalDate(c);
       if (!byDay[day]) byDay[day] = { mood: [], anhedonia: [], energy: [], hopelessness: [], rumination: [] };
-      Object.keys(c.responses).forEach(k => byDay[day][k].push(c.responses[k]));
+      Object.keys(byDay[day]).forEach(k => byDay[day][k].push(c.responses[k]));
     });
 
     return Object.entries(byDay)
@@ -51,7 +67,7 @@ const Insights = {
     const byDay = {};
 
     checkins.forEach(c => {
-      const day = c.timestamp.slice(0, 10);
+      const day = MG.getCheckinLocalDate(c);
       if (!byDay[day]) byDay[day] = { mood: [] };
       byDay[day].mood.push(c.responses.mood);
     });
@@ -68,7 +84,8 @@ const Insights = {
 
   computeLagCorrelations() {
     const checkins = MG.getCheckins();
-    if (checkins.length < 10) return [];
+    const pairCount = Math.max(0, checkins.length - 1);
+    if (pairCount < 20) return [];
 
     const keys = ['mood', 'anhedonia', 'energy', 'hopelessness', 'rumination'];
     const results = [];
@@ -79,17 +96,22 @@ const Insights = {
         const x = [];
         const y = [];
         for (let i = 1; i < checkins.length; i++) {
-          x.push(checkins[i - 1].responses[predictor]);
-          y.push(checkins[i].responses[outcome]);
+          const prev = checkins[i - 1].responses[predictor];
+          const next = checkins[i].responses[outcome];
+          if (Number.isFinite(prev) && Number.isFinite(next)) {
+            x.push(prev);
+            y.push(next);
+          }
         }
+        if (x.length < 20) continue;
         const r = this.pearson(x, y);
         if (Math.abs(r) > 0.25) {
           results.push({
             predictor,
             outcome,
-            r: r,
-            strength: Math.abs(r) > 0.5 ? '강함' : '보통',
-            direction: r > 0 ? '양의' : '음의'
+            r,
+            n: x.length,
+            direction: r > 0 ? 'positive' : 'negative'
           });
         }
       }
@@ -99,7 +121,7 @@ const Insights = {
   },
 
   renderAll() {
-    const { unlocked, days } = MG.checkUnlocks();
+    const { unlocked, days, pairCount } = MG.checkUnlocks();
 
     const lockedEl = document.getElementById('insights-locked');
     const trajectoryEl = document.getElementById('insight-trajectory');
@@ -108,6 +130,8 @@ const Insights = {
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const lockedMsg = document.getElementById('locked-msg');
+
+    this.renderDataQuality();
 
     const hasAny = unlocked.trajectory || unlocked.variability || unlocked.lag;
 
@@ -144,10 +168,44 @@ const Insights = {
       if (unlocked.lag) {
         lagEl.classList.remove('hidden');
         this.renderLag();
+      } else if (hasAny) {
+        lagEl.classList.remove('hidden');
+        this.renderLagLocked(pairCount);
       } else {
         lagEl.classList.add('hidden');
       }
     }
+  },
+
+  renderDataQuality() {
+    const container = document.getElementById('data-quality-grid');
+    const missing = document.getElementById('data-quality-missing');
+    if (!container) return;
+
+    const q = MG.getDataQuality();
+    const rate = Math.round(q.completionRate * 100);
+    container.innerHTML = `
+      <div class="quality-stat"><strong>${q.totalCheckins}</strong><span>총 체크인</span></div>
+      <div class="quality-stat"><strong>${q.uniqueDays}</strong><span>기록 일수</span></div>
+      <div class="quality-stat"><strong>${q.averagePerDay.toFixed(1)}</strong><span>일 평균</span></div>
+      <div class="quality-stat"><strong>${rate}%</strong><span>완료율</span></div>
+    `;
+
+    if (missing) {
+      const details = Object.entries(q.missingByWindow)
+        .map(([key, count]) => `${this.WINDOW_LABELS[key]} ${count}`)
+        .join(' · ');
+      missing.textContent = q.uniqueDays
+        ? `결측 시간대: ${details}`
+        : '체크인을 시작하면 데이터 품질 지표가 채워집니다';
+    }
+  },
+
+  renderLagLocked(pairCount) {
+    const container = document.getElementById('lag-results');
+    if (!container) return;
+    const remaining = Math.max(0, 20 - pairCount);
+    container.innerHTML = `<p style="color:var(--text-secondary)">시차 패턴 탐색은 연속 체크인 쌍이 20개 이상일 때 표시됩니다. 현재 ${pairCount}개이며 ${remaining}개가 더 필요해요.</p>`;
   },
 
   renderTrajectory() {
@@ -217,25 +275,19 @@ const Insights = {
     const corrs = this.computeLagCorrelations();
 
     if (corrs.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-secondary)">아직 유의미한 패턴이 감지되지 않았습니다. 더 많은 데이터가 필요해요.</p>';
+      container.innerHTML = '<p style="color:var(--text-secondary)">뚜렷한 시차 패턴은 아직 보이지 않습니다. 이는 정상적인 결과일 수 있으며, 더 많은 기록이 쌓이면 다시 탐색됩니다.</p>';
       return;
     }
 
-    const keyNames = {
-      mood: '기분', anhedonia: '무쾌감증', energy: '에너지',
-      hopelessness: '절망감', rumination: '반추'
-    };
-
     let html = '';
     corrs.forEach(c => {
-      const emoji = c.direction === '음의' ? '📉' : '📈';
+      const emoji = c.direction === 'negative' ? '📉' : '📈';
+      const directionLabel = c.direction === 'negative' ? '반대 방향' : '같은 방향';
       html += `
         <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
-          ${emoji} <strong>${keyNames[c.predictor]}</strong> → 다음 <strong>${keyNames[c.outcome]}</strong><br>
+          ${emoji} <strong>${this.KEY_NAMES[c.predictor]}</strong> → 다음 <strong>${this.KEY_NAMES[c.outcome]}</strong><br>
           <span style="color:var(--text-secondary);font-size:14px;">
-            ${keyNames[c.predictor]}이(가) ${c.direction === '음의' ? '낮을 때' : '높을 때'}
-            다음 ${keyNames[c.outcome]}이(가) ${Math.abs(Math.round(c.r * 100))}% 정도
-            ${c.direction === '음의' ? '낮아지는' : '높아지는'} 경향 (r=${c.r.toFixed(2)}, ${c.strength})
+            체크인 쌍 ${c.n}개 기준, r=${c.r.toFixed(2)} (${directionLabel}, 효과 크기 ${Math.abs(c.r).toFixed(2)}). 진단이나 인과 해석이 아닌 개인 패턴 탐색용입니다.
           </span>
         </div>`;
     });
@@ -274,6 +326,12 @@ const Insights = {
       y: padTop + chartH - (v / 100) * chartH
     }));
 
+    const areaD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ` L ${points[points.length - 1].x} ${padTop + chartH} L ${points[0].x} ${padTop + chartH} Z`;
+    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    area.setAttribute('d', areaD);
+    area.setAttribute('fill', 'rgba(108,92,231,0.1)');
+    svg.appendChild(area);
+
     const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', pathD);
@@ -283,12 +341,6 @@ const Insights = {
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(path);
-
-    const areaD = pathD + ` L ${points[points.length - 1].x} ${padTop + chartH} L ${points[0].x} ${padTop + chartH} Z`;
-    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    area.setAttribute('d', areaD);
-    area.setAttribute('fill', 'rgba(108,92,231,0.1)');
-    svg.appendChild(area);
 
     points.forEach((p, i) => {
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -312,3 +364,7 @@ const Insights = {
     return svg;
   }
 };
+
+if (typeof module !== 'undefined') {
+  module.exports = Insights;
+}

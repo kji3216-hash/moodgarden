@@ -1,4 +1,6 @@
 const MG = {
+  SCHEMA_VERSION: 2,
+
   KEYS: {
     profile: 'mg_profile',
     checkins: 'mg_checkins',
@@ -9,8 +11,83 @@ const MG = {
     unlocked: 'mg_unlocked'
   },
 
+  RESPONSE_KEYS: ['mood', 'anhedonia', 'energy', 'hopelessness', 'rumination'],
+  CONTEXT_KEYS: ['sleepPoor', 'socialActivity', 'exercise', 'stressEvent', 'medicationTaken', 'ateMeal', 'alcohol', 'therapy'],
+  WINDOWS: ['morning', 'afternoon', 'evening'],
+
+  parseJSON(value, fallback) {
+    try {
+      return JSON.parse(value || JSON.stringify(fallback));
+    } catch (err) {
+      return fallback;
+    }
+  },
+
+  pad2(value) {
+    return String(value).padStart(2, '0');
+  },
+
+  toLocalDate(date) {
+    const d = date ? new Date(date) : new Date();
+    return [d.getFullYear(), this.pad2(d.getMonth() + 1), this.pad2(d.getDate())].join('-');
+  },
+
+  getTimezoneOffset(date) {
+    return (date ? new Date(date) : new Date()).getTimezoneOffset();
+  },
+
+  buildCheckinId(localDate, windowKey) {
+    return localDate + '_' + windowKey;
+  },
+
+  getCheckinSubmittedAt(checkin) {
+    return checkin.submittedAt || checkin.timestamp || checkin.scheduledAt || '';
+  },
+
+  getCheckinLocalDate(checkin) {
+    if (checkin.localDate) return checkin.localDate;
+    return this.toLocalDate(this.getCheckinSubmittedAt(checkin) || new Date());
+  },
+
+  normalizeCheckin(raw) {
+    const submittedAt = raw.submittedAt || raw.timestamp || new Date().toISOString();
+    const localDate = raw.localDate || this.toLocalDate(submittedAt);
+    const windowKey = raw.window || 'unknown';
+    const responses = {};
+    const context = {};
+
+    this.RESPONSE_KEYS.forEach(key => {
+      const value = raw.responses && raw.responses[key];
+      responses[key] = Number.isFinite(Number(value)) ? Number(value) : 0;
+    });
+
+    this.CONTEXT_KEYS.forEach(key => {
+      context[key] = Boolean(raw.context && raw.context[key]);
+    });
+
+    return {
+      id: raw.id || this.buildCheckinId(localDate, windowKey),
+      schemaVersion: this.SCHEMA_VERSION,
+      localDate,
+      window: windowKey,
+      scheduledAt: raw.scheduledAt || '',
+      submittedAt,
+      timestamp: submittedAt,
+      timezoneOffset: Number.isFinite(Number(raw.timezoneOffset)) ? Number(raw.timezoneOffset) : this.getTimezoneOffset(submittedAt),
+      responses,
+      context,
+      note: raw.note || ''
+    };
+  },
+
+  normalizeCheckins(checkins) {
+    return checkins
+      .map(c => this.normalizeCheckin(c))
+      .sort((a, b) => this.getCheckinSubmittedAt(a).localeCompare(this.getCheckinSubmittedAt(b)));
+  },
+
   getProfile() {
-    return JSON.parse(localStorage.getItem(this.KEYS.profile) || 'null');
+    return this.parseJSON(localStorage.getItem(this.KEYS.profile), null);
   },
 
   saveProfile(data) {
@@ -21,28 +98,51 @@ const MG = {
   },
 
   getCheckins() {
-    return JSON.parse(localStorage.getItem(this.KEYS.checkins) || '[]');
+    const raw = this.parseJSON(localStorage.getItem(this.KEYS.checkins), []);
+    const normalized = this.normalizeCheckins(Array.isArray(raw) ? raw : []);
+    if (JSON.stringify(raw) !== JSON.stringify(normalized)) {
+      localStorage.setItem(this.KEYS.checkins, JSON.stringify(normalized));
+    }
+    return normalized;
+  },
+
+  saveCheckins(checkins) {
+    localStorage.setItem(this.KEYS.checkins, JSON.stringify(this.normalizeCheckins(checkins)));
+  },
+
+  upsertCheckin(checkin) {
+    const normalized = this.normalizeCheckin(checkin);
+    const checkins = this.getCheckins();
+    const index = checkins.findIndex(c => c.id === normalized.id);
+    const replaced = index !== -1;
+
+    if (replaced) {
+      checkins[index] = normalized;
+    } else {
+      checkins.push(normalized);
+    }
+
+    this.saveCheckins(checkins);
+    return { checkin: normalized, replaced };
   },
 
   addCheckin(checkin) {
-    const checkins = this.getCheckins();
-    checkins.push(checkin);
-    localStorage.setItem(this.KEYS.checkins, JSON.stringify(checkins));
+    return this.upsertCheckin(checkin);
   },
 
   getTodayCheckins() {
-    const today = new Date().toISOString().slice(0, 10);
-    return this.getCheckins().filter(c => c.timestamp.slice(0, 10) === today);
+    const today = this.toLocalDate();
+    return this.getCheckins().filter(c => this.getCheckinLocalDate(c) === today);
   },
 
   getUniqueDays() {
     const dates = new Set();
-    this.getCheckins().forEach(c => dates.add(c.timestamp.slice(0, 10)));
+    this.getCheckins().forEach(c => dates.add(this.getCheckinLocalDate(c)));
     return dates.size;
   },
 
   getStamps() {
-    return JSON.parse(localStorage.getItem(this.KEYS.stamps) || '{"stamps":0,"slots":[],"completedCards":0}');
+    return this.parseJSON(localStorage.getItem(this.KEYS.stamps), { stamps: 0, slots: [], completedCards: 0 });
   },
 
   addStamp() {
@@ -61,16 +161,18 @@ const MG = {
   },
 
   getStreak() {
-    return JSON.parse(localStorage.getItem(this.KEYS.streak) || '{"count":0,"lastDate":null,"freezes":2,"milestones":[]}');
+    return this.parseJSON(localStorage.getItem(this.KEYS.streak), { count: 0, lastDate: null, freezes: 2, milestones: [] });
   },
 
   updateStreak() {
     const streak = this.getStreak();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = this.toLocalDate();
 
     if (streak.lastDate === today) return streak;
 
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = this.toLocalDate(yesterdayDate);
 
     if (streak.lastDate === yesterday) {
       streak.count += 1;
@@ -99,7 +201,7 @@ const MG = {
   },
 
   getSchedule() {
-    return JSON.parse(localStorage.getItem(this.KEYS.schedule) || 'null');
+    return this.parseJSON(localStorage.getItem(this.KEYS.schedule), null);
   },
 
   saveSchedule(schedule) {
@@ -107,11 +209,38 @@ const MG = {
   },
 
   getUnlocked() {
-    return JSON.parse(localStorage.getItem(this.KEYS.unlocked) || '{"trajectory":false,"variability":false,"lag":false}');
+    return this.parseJSON(localStorage.getItem(this.KEYS.unlocked), { trajectory: false, variability: false, lag: false });
+  },
+
+  getDataQuality() {
+    const checkins = this.getCheckins();
+    const days = [...new Set(checkins.map(c => this.getCheckinLocalDate(c)))].sort();
+    const windowCounts = this.WINDOWS.reduce((acc, key) => {
+      acc[key] = checkins.filter(c => c.window === key).length;
+      return acc;
+    }, {});
+    const expectedByWindow = days.length;
+    const missingByWindow = this.WINDOWS.reduce((acc, key) => {
+      acc[key] = Math.max(0, expectedByWindow - windowCounts[key]);
+      return acc;
+    }, {});
+    const totalExpected = days.length * this.WINDOWS.length;
+    const completionRate = totalExpected ? Math.min(1, checkins.length / totalExpected) : 0;
+
+    return {
+      totalCheckins: checkins.length,
+      uniqueDays: days.length,
+      averagePerDay: days.length ? checkins.length / days.length : 0,
+      completionRate,
+      windowCounts,
+      missingByWindow,
+      totalMissing: Object.values(missingByWindow).reduce((sum, value) => sum + value, 0)
+    };
   },
 
   checkUnlocks() {
     const days = this.getUniqueDays();
+    const pairCount = Math.max(0, this.getCheckins().length - 1);
     const unlocked = this.getUnlocked();
     let changed = false;
 
@@ -123,7 +252,7 @@ const MG = {
       unlocked.variability = true;
       changed = true;
     }
-    if (days >= 15 && !unlocked.lag) {
+    if (pairCount >= 20 && !unlocked.lag) {
       unlocked.lag = true;
       changed = true;
     }
@@ -131,32 +260,50 @@ const MG = {
     if (changed) {
       localStorage.setItem(this.KEYS.unlocked, JSON.stringify(unlocked));
     }
-    return { unlocked, days };
+    return { unlocked, days, pairCount };
+  },
+
+  escapeCSV(value) {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (/[",\n\r]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+    return str;
   },
 
   exportCSV() {
     const checkins = this.getCheckins();
     if (checkins.length === 0) return null;
 
-    const headers = ['timestamp', 'window', 'mood', 'anhedonia', 'energy', 'hopelessness', 'rumination', 'sleepPoor', 'socialActivity', 'exercise', 'stressEvent', 'medicationTaken', 'ateMeal', 'alcohol', 'therapy', 'note'];
+    const headers = [
+      'id', 'schemaVersion', 'localDate', 'window', 'scheduledAt', 'submittedAt', 'timestamp', 'timezoneOffset',
+      'mood', 'anhedonia', 'energy', 'hopelessness', 'rumination',
+      'sleepPoor', 'socialActivity', 'exercise', 'stressEvent', 'medicationTaken', 'ateMeal', 'alcohol', 'therapy', 'note'
+    ];
+
     const rows = checkins.map(c => [
-      c.timestamp,
+      c.id,
+      c.schemaVersion,
+      this.getCheckinLocalDate(c),
       c.window,
+      c.scheduledAt || '',
+      c.submittedAt || '',
+      c.timestamp || c.submittedAt || '',
+      c.timezoneOffset,
       c.responses.mood,
       c.responses.anhedonia,
       c.responses.energy,
       c.responses.hopelessness,
       c.responses.rumination,
-      c.context.sleepPoor || false,
-      c.context.socialActivity || false,
-      c.context.exercise || false,
-      c.context.stressEvent || false,
-      c.context.medicationTaken || false,
-      c.context.ateMeal || false,
-      c.context.alcohol || false,
-      c.context.therapy || false,
-      '"' + (c.note || '').replace(/"/g, '""') + '"'
-    ].join(','));
+      c.context.sleepPoor,
+      c.context.socialActivity,
+      c.context.exercise,
+      c.context.stressEvent,
+      c.context.medicationTaken,
+      c.context.ateMeal,
+      c.context.alcohol,
+      c.context.therapy,
+      c.note || ''
+    ].map(value => this.escapeCSV(value)).join(','));
 
     return [headers.join(','), ...rows].join('\n');
   },
@@ -168,7 +315,7 @@ const MG = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `moodgarden_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = 'moodgarden_' + this.toLocalDate() + '.csv';
     a.click();
     URL.revokeObjectURL(url);
   },
@@ -177,3 +324,7 @@ const MG = {
     Object.values(this.KEYS).forEach(k => localStorage.removeItem(k));
   }
 };
+
+if (typeof module !== 'undefined') {
+  module.exports = MG;
+}
