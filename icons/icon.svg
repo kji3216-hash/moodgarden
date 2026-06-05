@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a8e6cf"/>
+      <stop offset="100%" stop-color="#6c5ce7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Stem -->
+  <path d="M256 380 Q256 300 256 220" stroke="#2d5016" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- Left leaf -->
+  <path d="M256 260 Q200 230 190 180 Q220 200 256 220" fill="#4CAF50"/>
+  <!-- Right leaf -->
+  <path d="M256 300 Q310 270 320 220 Q290 250 256 270" fill="#66BB6A"/>
+  <!-- Top leaf -->
+  <path d="M256 220 Q230 170 250 130 Q270 170 256 220" fill="#81C784"/>
+  <!-- Soil -->
+  <ellipse cx="256" cy="400" rx="80" ry="20" fill="#5D4037" opacity="0.6"/>
+</svg>

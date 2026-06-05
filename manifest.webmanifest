@@ -1,0 +1,21 @@
+{
+  "name": "MoodGarden",
+  "short_name": "MoodGarden",
+  "description": "EMA 기반 우울증 자기 추적 정원 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f7ee",
+  "theme_color": "#6c5ce7",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["health", "lifestyle"]
+}

@@ -93,6 +93,20 @@ html, body {
   margin-bottom: 20px;
 }
 
+.consent-notice {
+  background: rgba(108, 92, 231, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.consent-notice strong {
+  color: var(--text);
+}
+
 .form-group label {
   display: block;
   font-weight: 600;

@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#f0f7ee">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
   <title>MoodGarden 🌱</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,6 +24,9 @@
       </div>
 
       <form id="onboarding-form">
+        <div class="consent-notice">
+          <p>🌱 이 앱은 진단·치료 도구가 아닌 <strong>자기 추적 및 연구 참고용</strong>입니다. 입력한 데이터는 기기에만 저장되며, CSV로 직접 내보낼 수 있습니다.</p>
+        </div>
         <div class="form-group">
           <label>이름 (또는 닉네임)</label>
           <input type="text" id="inp-nickname" placeholder="사용" required>
@@ -323,10 +329,16 @@
   <div id="toast" class="toast hidden"></div>
 
   <!-- Scripts -->
-  <script src="storage.js?v=4"></script>
-  <script src="scheduler.js?v=4"></script>
-  <script src="garden.js?v=3"></script>
-  <script src="insights.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
+  <script src="storage.js?v=5"></script>
+  <script src="sync.js?v=1"></script>
+  <script src="scheduler.js?v=5"></script>
+  <script src="garden.js?v=4"></script>
+  <script src="insights.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

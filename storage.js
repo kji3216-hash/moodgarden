@@ -123,6 +123,11 @@ const MG = {
     }
 
     this.saveCheckins(checkins);
+
+    if (typeof Sync !== 'undefined') {
+      Sync.enqueue(normalized.id);
+    }
+
     return { checkin: normalized, replaced };
   },
 
