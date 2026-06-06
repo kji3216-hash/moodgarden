@@ -1,0 +1,13 @@
+{
+  "name": "moodgarden",
+  "version": "1.0.0",
+  "description": "EMA-based depression self-tracking garden app",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/storage-insights.test.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

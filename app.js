@@ -199,6 +199,13 @@
     $('#onboarding-form').addEventListener('submit', function(e) { e.preventDefault(); handleOnboarding(e); });
     $('#btn-start').addEventListener('click', function(e) { e.preventDefault(); handleOnboarding(e); });
 
+    if (window.electronAPI) {
+      window.electronAPI.onOpenCheckin(() => {
+        const profile = MG.getProfile();
+        if (profile) openCheckin();
+      });
+    }
+
     $$('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.screen;
@@ -214,12 +221,20 @@
     $('#btn-back-garden').addEventListener('click', () => showScreen('garden'));
     $('#btn-submit-checkin').addEventListener('click', submitCheckin);
 
-    $('#btn-export').addEventListener('click', () => {
+    $('#btn-export').addEventListener('click', async () => {
       const csv = MG.exportCSV();
       if (!csv) {
         showToast('아직 내보낼 데이터가 없어요');
         return;
       }
+
+      if (window.electronAPI) {
+        const defaultName = 'moodgarden_' + MG.toLocalDate() + '.csv';
+        const saved = await window.electronAPI.saveCSV(csv, defaultName);
+        if (saved) showToast('CSV 파일이 저장되었어요 📤');
+        return;
+      }
+
       MG.downloadCSV();
       showToast('CSV 파일이 다운로드되었어요 📤');
     });
