@@ -243,6 +243,18 @@
       showToast('설정 기능은 준비 중입니다');
     });
 
+    $('#btn-import').addEventListener('click', async () => {
+      if (!window.electronAPI) {
+        showToast('데이터 가져오기는 PC 앱에서만 지원됩니다');
+        return;
+      }
+      const csvText = await window.electronAPI.importCSV();
+      if (!csvText) return;
+      const result = MG.importCSV(csvText);
+      showToast(`${result.imported}건 가져옴${result.skipped ? ', ' + result.skipped + '건 건너뜀' : ''} 📥`);
+      refreshGarden();
+    });
+
     $$('.vas-slider').forEach(slider => {
       const valueEl = slider.parentElement.querySelector('.vas-value');
       slider.addEventListener('input', () => {

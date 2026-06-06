@@ -327,6 +327,88 @@ const MG = {
 
   clear() {
     Object.values(this.KEYS).forEach(k => localStorage.removeItem(k));
+  },
+
+  parseCSVLine(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          fields.push(current);
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+    }
+    fields.push(current);
+    return fields;
+  },
+
+  importCSV(csvText) {
+    const lines = csvText.trim().split(/\r?\n/);
+    if (lines.length < 2) return { imported: 0, skipped: 0 };
+
+    const headers = this.parseCSVLine(lines[0]);
+    let imported = 0;
+    let skipped = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const values = this.parseCSVLine(line);
+      if (values.length < headers.length) { skipped++; continue; }
+
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = values[idx]; });
+
+      this.upsertCheckin({
+        id: row.id,
+        submittedAt: row.submittedAt,
+        timestamp: row.timestamp || row.submittedAt,
+        localDate: row.localDate,
+        window: row.window,
+        scheduledAt: row.scheduledAt || '',
+        timezoneOffset: row.timezoneOffset,
+        responses: {
+          mood: Number(row.mood) || 0,
+          anhedonia: Number(row.anhedonia) || 0,
+          energy: Number(row.energy) || 0,
+          hopelessness: Number(row.hopelessness) || 0,
+          rumination: Number(row.rumination) || 0
+        },
+        context: {
+          sleepPoor: row.sleepPoor === 'true',
+          socialActivity: row.socialActivity === 'true',
+          exercise: row.exercise === 'true',
+          stressEvent: row.stressEvent === 'true',
+          medicationTaken: row.medicationTaken === 'true',
+          ateMeal: row.ateMeal === 'true',
+          alcohol: row.alcohol === 'true',
+          therapy: row.therapy === 'true'
+        },
+        note: row.note || ''
+      });
+      imported++;
+    }
+
+    return { imported, skipped };
   }
 };
 

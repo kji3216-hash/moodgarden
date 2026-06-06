@@ -1,0 +1,6 @@
+﻿id,schemaVersion,localDate,window,scheduledAt,submittedAt,timestamp,timezoneOffset,mood,anhedonia,energy,hopelessness,rumination,sleepPoor,socialActivity,exercise,stressEvent,medicationTaken,ateMeal,alcohol,therapy,note
+2026-06-05_afternoon,2,2026-06-05,afternoon,2026-06-05T05:20:00.000Z,2026-06-05T05:07:32.964Z,2026-06-05T05:07:32.964Z,-540,30,20,10,20,60,false,false,false,false,false,false,false,false,
+2026-06-05_evening,2,2026-06-05,evening,2026-06-05T11:33:00.000Z,2026-06-05T10:30:45.312Z,2026-06-05T10:30:45.312Z,-540,40,40,41,35,30,false,true,false,false,false,false,false,false,
+2026-06-06_morning,2,2026-06-06,morning,2026-06-06T00:19:00.000Z,2026-06-06T00:39:51.784Z,2026-06-06T00:39:51.784Z,-540,40,35,25,30,30,true,false,false,false,true,false,false,false,
+2026-06-06_afternoon,2,2026-06-06,afternoon,2026-06-06T05:49:00.000Z,2026-06-06T04:57:36.002Z,2026-06-06T04:57:36.002Z,-540,50,45,50,35,25,false,false,false,false,false,true,false,false,
+2026-06-06_evening,2,2026-06-06,evening,2026-06-06T10:42:00.000Z,2026-06-06T10:45:34.766Z,2026-06-06T10:45:34.766Z,-540,30,24,22,28,29,false,false,false,false,false,false,false,false,초저녁에 잤다가 과외하기 위해 일어남

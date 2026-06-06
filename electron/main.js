@@ -170,6 +170,18 @@ ipcMain.handle('save-csv', async (event, csvContent, defaultName) => {
   return null;
 });
 
+ipcMain.handle('import-csv', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'CSV 가져오기',
+    filters: [{ name: 'CSV', extensions: ['csv'] }],
+    properties: ['openFile']
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    return fs.readFileSync(result.filePaths[0], 'utf-8');
+  }
+  return null;
+});
+
 ipcMain.handle('export-json', async (event, jsonContent, defaultName) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'JSON 내보내기',
