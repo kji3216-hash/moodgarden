@@ -408,8 +408,64 @@ const MG = {
       imported++;
     }
 
+    this.rebuildMeta();
     return { imported, skipped };
+  },
+
+  rebuildMeta() {
+    const checkins = this.getCheckins();
+    const uniqueDates = [...new Set(checkins.map(c => this.getCheckinLocalDate(c)))].sort();
+    if (uniqueDates.length === 0) return null;
+
+    const total = checkins.length;
+    const stamps = {
+      stamps: total % 7,
+      slots: Array(total % 7).fill(true),
+      completedCards: Math.floor(total / 7)
+    };
+    localStorage.setItem(this.KEYS.stamps, JSON.stringify(stamps));
+
+    const today = this.toLocalDate();
+    const mostRecent = uniqueDates[uniqueDates.length - 1];
+    let count = 0;
+    let expected = mostRecent;
+
+    for (let i = uniqueDates.length - 1; i >= 0; i--) {
+      if (uniqueDates[i] === expected) {
+        count++;
+        const d = new Date(expected + 'T00:00:00');
+        d.setDate(d.getDate() - 1);
+        expected = this.toLocalDate(d);
+      } else {
+        break;
+      }
+    }
+
+    if (mostRecent !== today) {
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterday = this.toLocalDate(yesterdayDate);
+      if (mostRecent !== yesterday) count = 0;
+    }
+
+    const milestones = [];
+    if (count >= 30) milestones.push(30);
+    if (count >= 14) milestones.push(14);
+    if (count >= 7) milestones.push(7);
+
+    const streak = {
+      count,
+      lastDate: mostRecent,
+      freezes: count >= 7 ? 3 : 2,
+      milestones
+    };
+    localStorage.setItem(this.KEYS.streak, JSON.stringify(streak));
+
+    this.checkUnlocks();
+
+    return { stamps, streak, unlocked: this.getUnlocked() };
   }
+
 };
 
 if (typeof module !== 'undefined') {
