@@ -2,6 +2,8 @@ const assert = require('assert');
 const MG = require('../storage.js');
 global.MG = MG;
 const Insights = require('../insights.js');
+const Scheduler = require('../scheduler.js');
+const Sync = require('../sync.js');
 
 const store = new Map();
 global.localStorage = {
@@ -65,6 +67,14 @@ assert.strictEqual(migrated.id, migrated.localDate + '_evening');
 assert.strictEqual(migrated.context.exercise, true);
 
 reset();
+localStorage.setItem(MG.KEYS.checkins, JSON.stringify([
+  makeCheckin('2026-06-02', 'morning', 40),
+  makeCheckin('2026-06-02', 'morning', 80)
+]));
+assert.strictEqual(MG.getCheckins().length, 1);
+assert.strictEqual(MG.getCheckins()[0].responses.mood, 80);
+
+reset();
 let result = MG.upsertCheckin(makeCheckin('2026-06-02', 'morning', 40));
 assert.strictEqual(result.replaced, false);
 result = MG.upsertCheckin(makeCheckin('2026-06-02', 'morning', 75));
@@ -105,5 +115,15 @@ assert.strictEqual(quality.totalCheckins, 21);
 assert.strictEqual(quality.uniqueDays, 7);
 assert.strictEqual(quality.averagePerDay, 3);
 assert.strictEqual(quality.totalMissing, 0);
+
+assert.strictEqual(Scheduler.getWindowForTime(new Date('2026-06-08T08:30:00')).key, 'morning');
+assert.strictEqual(Scheduler.getWindowForTime(new Date('2026-06-08T12:30:00')), null);
+assert.strictEqual(Scheduler.getWindowForTime(new Date('2026-06-08T20:30:00')).key, 'evening');
+
+reset();
+Sync.configure();
+assert.strictEqual(Sync.isConfigured(), false);
+assert.strictEqual(Sync.enqueue('2026-06-08_morning'), false);
+assert.strictEqual(JSON.parse(localStorage.getItem('mg_sync_queue') || '[]').length, 0);
 
 console.log('storage-insights tests passed');

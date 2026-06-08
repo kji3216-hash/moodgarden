@@ -191,6 +191,29 @@ html, body {
   opacity: 0.9;
 }
 
+.btn-secondary,
+.btn-danger {
+  width: 100%;
+  padding: 13px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-secondary {
+  background: rgba(108, 92, 231, 0.1);
+  color: var(--primary);
+}
+
+.btn-danger {
+  background: rgba(214, 48, 49, 0.1);
+  color: var(--danger);
+}
+
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -446,6 +469,16 @@ html, body {
   font-size: 14px;
 }
 
+.checkin-meta {
+  margin: -6px 20px 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(108, 92, 231, 0.08);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .vas-item {
   padding: 16px 20px;
 }
@@ -666,6 +699,77 @@ html, body {
   opacity: 0;
   transform: translateX(-50%) translateY(20px);
   pointer-events: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-panel {
+  width: min(520px, 100%);
+  max-height: min(720px, 92vh);
+  overflow-y: auto;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+  padding: 18px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+}
+
+.settings-section {
+  padding: 14px 0;
+  border-top: 1px solid #eee;
+}
+
+.settings-section h3 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.settings-section label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.settings-section input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px 13px;
+  border: 2px solid #e0e0e0;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.settings-help {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 10px;
 }
 
 

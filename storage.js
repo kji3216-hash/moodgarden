@@ -74,6 +74,7 @@ const MG = {
       submittedAt,
       timestamp: submittedAt,
       timezoneOffset: Number.isFinite(Number(raw.timezoneOffset)) ? Number(raw.timezoneOffset) : this.getTimezoneOffset(submittedAt),
+      outOfWindow: Boolean(raw.outOfWindow),
       responses,
       context,
       note: raw.note || ''
@@ -81,8 +82,14 @@ const MG = {
   },
 
   normalizeCheckins(checkins) {
-    return checkins
-      .map(c => this.normalizeCheckin(c))
+    const byId = new Map();
+    checkins.map(c => this.normalizeCheckin(c)).forEach(checkin => {
+      const existing = byId.get(checkin.id);
+      if (!existing || this.getCheckinSubmittedAt(checkin) >= this.getCheckinSubmittedAt(existing)) {
+        byId.set(checkin.id, checkin);
+      }
+    });
+    return [...byId.values()]
       .sort((a, b) => this.getCheckinSubmittedAt(a).localeCompare(this.getCheckinSubmittedAt(b)));
   },
 
@@ -91,9 +98,27 @@ const MG = {
   },
 
   saveProfile(data) {
+    const existing = this.getProfile() || {};
     localStorage.setItem(this.KEYS.profile, JSON.stringify({
+      ...existing,
       ...data,
-      createdAt: new Date().toISOString()
+      createdAt: existing.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+  },
+
+  getSettings() {
+    return this.parseJSON(localStorage.getItem(this.KEYS.settings), {
+      sliderStart: 'last-or-neutral',
+      allowOutOfWindow: true
+    });
+  },
+
+  saveSettings(settings) {
+    localStorage.setItem(this.KEYS.settings, JSON.stringify({
+      ...this.getSettings(),
+      ...settings,
+      updatedAt: new Date().toISOString()
     }));
   },
 
@@ -124,7 +149,7 @@ const MG = {
 
     this.saveCheckins(checkins);
 
-    if (typeof Sync !== 'undefined') {
+    if (typeof Sync !== 'undefined' && Sync.isConfigured && Sync.isConfigured()) {
       Sync.enqueue(normalized.id);
     }
 
@@ -280,7 +305,7 @@ const MG = {
     if (checkins.length === 0) return null;
 
     const headers = [
-      'id', 'schemaVersion', 'localDate', 'window', 'scheduledAt', 'submittedAt', 'timestamp', 'timezoneOffset',
+      'id', 'schemaVersion', 'localDate', 'window', 'scheduledAt', 'submittedAt', 'timestamp', 'timezoneOffset', 'outOfWindow',
       'mood', 'anhedonia', 'energy', 'hopelessness', 'rumination',
       'sleepPoor', 'socialActivity', 'exercise', 'stressEvent', 'medicationTaken', 'ateMeal', 'alcohol', 'therapy', 'note'
     ];
@@ -294,6 +319,7 @@ const MG = {
       c.submittedAt || '',
       c.timestamp || c.submittedAt || '',
       c.timezoneOffset,
+      c.outOfWindow,
       c.responses.mood,
       c.responses.anhedonia,
       c.responses.energy,
@@ -323,6 +349,19 @@ const MG = {
     a.download = 'moodgarden_' + this.toLocalDate() + '.csv';
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  exportJSON() {
+    return JSON.stringify({
+      schemaVersion: this.SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      profile: this.getProfile(),
+      settings: this.getSettings(),
+      checkins: this.getCheckins(),
+      stamps: this.getStamps(),
+      streak: this.getStreak(),
+      unlocked: this.getUnlocked()
+    }, null, 2);
   },
 
   clear() {
@@ -386,6 +425,7 @@ const MG = {
         window: row.window,
         scheduledAt: row.scheduledAt || '',
         timezoneOffset: row.timezoneOffset,
+        outOfWindow: row.outOfWindow === 'true',
         responses: {
           mood: Number(row.mood) || 0,
           anhedonia: Number(row.anhedonia) || 0,

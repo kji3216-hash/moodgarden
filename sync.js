@@ -33,6 +33,7 @@ const Sync = {
   },
 
   enqueue(checkinId) {
+    if (!this._configured) return false;
     const queue = this._getQueue();
     if (!queue.includes(checkinId)) {
       queue.push(checkinId);
@@ -41,10 +42,11 @@ const Sync = {
     if (this._configured) {
       this.syncPending();
     }
+    return true;
   },
 
   async syncPending() {
-    if (!this._configured) return { synced: 0, failed: 0 };
+    if (!this._configured) return { synced: 0, failed: 0, disabled: true };
     const queue = this._getQueue();
     const status = this._getStatus();
     status.pending = queue.length;
@@ -55,11 +57,15 @@ const Sync = {
   getStatus() {
     const status = this._getStatus();
     status.pending = this._getQueue().length;
+    status.configured = this._configured;
     return status;
   },
 
   configure() {
     this._configured = false;
+    this._queue = [];
+    this._saveQueue();
+    this._saveStatus({ lastSync: null, pending: 0, configured: false });
   }
 };
 

@@ -13,7 +13,7 @@ const Scheduler = {
   },
 
   randomTimeForWindow(baseDate, windowDef) {
-    const hour = windowDef.start + Math.floor(Math.random() * (windowDef.end - windowDef.start));
+    const hour = windowDef.start + Math.floor(Math.random() * (windowDef.end - windowDef.start + 1));
     const minute = Math.floor(Math.random() * 60);
     return new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, minute);
   },
@@ -40,6 +40,41 @@ const Scheduler = {
       ...windowDef,
       scheduledAtDate: new Date(windowDef.scheduledAt)
     };
+  },
+
+  getWindowForTime(date) {
+    const target = date ? new Date(date) : new Date();
+    const minutes = target.getHours() * 60 + target.getMinutes();
+    return this.WINDOWS.find(w => {
+      const startMin = w.start * 60;
+      const endMin = w.end * 60 + 59;
+      return minutes >= startMin && minutes <= endMin;
+    }) || null;
+  },
+
+  getNearestWindow(date) {
+    const target = date ? new Date(date) : new Date();
+    const schedule = this.ensureSchedule();
+    const candidates = schedule.today.length ? schedule.today : this.WINDOWS;
+
+    return candidates.reduce((nearest, current) => {
+      const currentDate = current.scheduledAtDate || new Date(current.scheduledAt || target);
+      const diff = Math.abs(currentDate.getTime() - target.getTime());
+      if (!nearest || diff < nearest.diff) return { window: current, diff };
+      return nearest;
+    }, null).window;
+  },
+
+  getSubmissionWindow(date) {
+    const target = date ? new Date(date) : new Date();
+    const activeWindow = this.getWindowForTime(target);
+    if (activeWindow) {
+      const scheduled = this.getWindowByKey(activeWindow.key) || activeWindow;
+      return { ...scheduled, isWithinWindow: true };
+    }
+
+    const nearest = this.getNearestWindow(target);
+    return { ...nearest, isWithinWindow: false };
   },
 
   ensureSchedule() {
@@ -87,7 +122,7 @@ const Scheduler = {
       }
     }
 
-    return nextWindow || schedule.today[0];
+    return nextWindow || schedule.tomorrow[0] || schedule.today[0];
   },
 
   getWindowByKey(key) {

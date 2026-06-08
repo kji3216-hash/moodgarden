@@ -22,7 +22,7 @@ function localDate(d) {
 }
 
 function randomTimeForWindow(baseDate, w) {
-  const hour = w.start + Math.floor(Math.random() * (w.end - w.start));
+  const hour = w.start + Math.floor(Math.random() * (w.end - w.start + 1));
   const minute = Math.floor(Math.random() * 60);
   return new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, minute);
 }

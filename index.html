@@ -155,8 +155,9 @@
       <div class="checkin-header">
         <button class="back-btn" id="btn-back-garden">←</button>
         <span class="checkin-window-label" id="checkin-window-label">오후 체크인</span>
-        <span class="checkin-step" id="checkin-step">1 / 5</span>
+        <span class="checkin-step" id="checkin-step">5개 문항</span>
       </div>
+      <div class="checkin-meta" id="checkin-meta"></div>
 
       <!-- VAS Sliders -->
       <div id="vas-container">
@@ -328,6 +329,45 @@
 
   <!-- Toast Notification -->
   <div id="toast" class="toast hidden"></div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="settings-title">설정</h2>
+        <button class="icon-btn" id="btn-close-settings" title="닫기">×</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>프로필</h3>
+        <label>
+          닉네임
+          <input type="text" id="settings-nickname">
+        </label>
+        <label>
+          출생년도
+          <input type="number" id="settings-birthyear" min="1940" max="2015">
+        </label>
+        <label>
+          주요 스트레스 요인
+          <input type="text" id="settings-stressors">
+        </label>
+        <button class="btn-primary" id="btn-save-settings">저장</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>데이터</h3>
+        <button class="btn-secondary" id="btn-export-json">JSON 백업 내보내기</button>
+        <button class="btn-danger" id="btn-clear-data">모든 로컬 데이터 삭제</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>알림</h3>
+        <button class="btn-secondary" id="btn-notification-permission">알림 권한 확인</button>
+        <p class="settings-help">PC 앱에서는 창을 닫아도 트레이에서 알림 스케줄을 유지합니다.</p>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script>
