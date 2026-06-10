@@ -204,8 +204,9 @@ const Insights = {
   renderLagLocked(pairCount) {
     const container = document.getElementById('lag-results');
     if (!container) return;
+    const totalCheckins = MG.getCheckins().length;
     const remaining = Math.max(0, 20 - pairCount);
-    container.innerHTML = `<p style="color:var(--text-secondary)">시차 패턴 탐색은 연속 체크인 쌍이 20개 이상일 때 표시됩니다. 현재 ${pairCount}개이며 ${remaining}개가 더 필요해요.</p>`;
+    container.innerHTML = `<p style="color:var(--text-secondary)">시차 패턴 탐색은 총 체크인 ${totalCheckins}회에서 만들어지는 인접 체크인 쌍 ${pairCount}개를 기준으로 합니다. 20쌍 이상일 때 표시되며, 현재 ${remaining}쌍이 더 필요해요.</p>`;
   },
 
   renderTrajectory() {
@@ -272,10 +273,12 @@ const Insights = {
     const container = document.getElementById('lag-results');
     if (!container) return;
 
+    const totalCheckins = MG.getCheckins().length;
+    const pairCount = Math.max(0, totalCheckins - 1);
     const corrs = this.computeLagCorrelations();
 
     if (corrs.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-secondary)">뚜렷한 시차 패턴은 아직 보이지 않습니다. 이는 정상적인 결과일 수 있으며, 더 많은 기록이 쌓이면 다시 탐색됩니다.</p>';
+      container.innerHTML = `<p style="color:var(--text-secondary)">총 체크인 ${totalCheckins}회에서 인접 체크인 쌍 ${pairCount}개를 분석했지만, 뚜렷한 시차 패턴은 아직 보이지 않습니다. 이는 정상적인 결과일 수 있으며, 더 많은 기록이 쌓이면 다시 탐색됩니다.</p>`;
       return;
     }
 
@@ -287,7 +290,7 @@ const Insights = {
         <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
           ${emoji} <strong>${this.KEY_NAMES[c.predictor]}</strong> → 다음 <strong>${this.KEY_NAMES[c.outcome]}</strong><br>
           <span style="color:var(--text-secondary);font-size:14px;">
-            체크인 쌍 ${c.n}개 기준, r=${c.r.toFixed(2)} (${directionLabel}, 효과 크기 ${Math.abs(c.r).toFixed(2)}). 진단이나 인과 해석이 아닌 개인 패턴 탐색용입니다.
+            총 체크인 ${totalCheckins}회에서 만든 인접쌍 ${pairCount}개 기준, r=${c.r.toFixed(2)} (${directionLabel}, 효과 크기 ${Math.abs(c.r).toFixed(2)}). 진단이나 인과 해석이 아닌 개인 패턴 탐색용입니다.
           </span>
         </div>`;
     });

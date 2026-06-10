@@ -272,25 +272,20 @@ const MG = {
     const days = this.getUniqueDays();
     const pairCount = Math.max(0, this.getCheckins().length - 1);
     const unlocked = this.getUnlocked();
-    let changed = false;
-
-    if (days >= 4 && !unlocked.trajectory) {
-      unlocked.trajectory = true;
-      changed = true;
-    }
-    if (days >= 8 && !unlocked.variability) {
-      unlocked.variability = true;
-      changed = true;
-    }
-    if (pairCount >= 20 && !unlocked.lag) {
-      unlocked.lag = true;
-      changed = true;
-    }
+    const nextUnlocked = {
+      trajectory: days >= 4,
+      variability: days >= 8,
+      lag: pairCount >= 20
+    };
+    const changed =
+      unlocked.trajectory !== nextUnlocked.trajectory ||
+      unlocked.variability !== nextUnlocked.variability ||
+      unlocked.lag !== nextUnlocked.lag;
 
     if (changed) {
-      localStorage.setItem(this.KEYS.unlocked, JSON.stringify(unlocked));
+      localStorage.setItem(this.KEYS.unlocked, JSON.stringify(nextUnlocked));
     }
-    return { unlocked, days, pairCount };
+    return { unlocked: nextUnlocked, days, pairCount };
   },
 
   escapeCSV(value) {

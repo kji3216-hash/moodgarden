@@ -97,6 +97,12 @@ assert.strictEqual(unlocks.unlocked.trajectory, true);
 assert.strictEqual(unlocks.unlocked.variability, false);
 assert.strictEqual(unlocks.unlocked.lag, false);
 
+localStorage.setItem(MG.KEYS.unlocked, JSON.stringify({ trajectory: true, variability: true, lag: true }));
+unlocks = MG.checkUnlocks();
+assert.strictEqual(unlocks.pairCount, 6);
+assert.strictEqual(unlocks.unlocked.lag, false);
+assert.strictEqual(MG.getUnlocked().lag, false);
+
 reset();
 for (let i = 0; i < 21; i++) {
   const day = String(Math.floor(i / 3) + 1).padStart(2, '0');
